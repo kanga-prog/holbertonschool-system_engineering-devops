@@ -1,0 +1,49 @@
+User → Load Balancer (HAProxy - Round Robin) → Server 1 and Server 2
+Each Server:
+  - Nginx (Web server)
+  - App server with code
+  - MySQL Replica (read-only)
+
+Database cluster:
+- Primary MySQL DB (handles writes)
+- Replicas (on both servers) handle reads, synced from Primary
+
+Load Balancer setup: Active-Active
+- Both servers handle traffic simultaneously
+- Round Robin distributes requests evenly
+
+Primary-Replica DB:
+- Primary handles writes
+- Replicas sync and serve read-only queries
+- Improves performance and redundancy
+
+Issues:
+- SPOF: Load balancer and Primary DB are single points of failure
+- No firewall or HTTPS: Security vulnerabilities
+- No monitoring: Can’t detect failures or performance issues
+
+
+this is the plan of structure : 
+
+                      User
+                       │
+                       ▼
+              ┌────────────────────┐
+              │ Load Balancer (LB) │   ← HAProxy
+              └────────────────────┘
+                   │        │
+            ┌──────┘        └──────┐
+            ▼                     ▼
+  ┌───────────────────┐   ┌───────────────────┐
+  │     Server #1     │   │     Server #2     │
+  └───────────────────┘   └───────────────────┘
+  │ Web Server (Nginx) │   │ Web Server (Nginx) │
+  │ App Server + Code  │   │ App Server + Code  │
+  │ MySQL Replica DB   │   │ MySQL Replica DB   │
+        ▲                        ▲
+        └────────┬──────────────┘
+                 │
+                 ▼
+       ┌──────────────────────┐
+       │  Primary MySQL DB    │  ← Optional 3rd server or external DB
+       └──────────────────────┘
