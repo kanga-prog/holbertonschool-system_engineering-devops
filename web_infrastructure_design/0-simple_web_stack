@@ -1,0 +1,104 @@
+Descriptive diagram of the infrastructure:
+
+User
+ │
+ │  Request: http://www.foobar.com
+ ▼
+DNS (Domain Name System)
+ │
+ │ Resolves www.foobar.com to 8.8.8.8
+ ▼
+Internet
+ ▼
+┌──────────────────────────────┐
+│         Server (8.8.8.8)     │
+│ ┌──────────────────────────┐ │
+│ │      Nginx (Web server)  │ │  ← Receives HTTP requests from users
+│ └──────────────────────────┘ │
+│           │                  │
+│           ▼                  │
+│ ┌──────────────────────────┐ │
+│ │ Application Server       │ │  ← Runs app logic (e.g., Python/Flask, PHP)
+│ │ Contains codebase        │ │
+│ └──────────────────────────┘ │
+│           │                  │
+│           ▼                  │
+│ ┌──────────────────────────┐ │
+│ │     MySQL Database       │ │  ← Stores data like users, posts, etc.
+│ └──────────────────────────┘ │
+└──────────────────────────────┘
+📘 Explanation (as requested)
+➤ What is a server?
+A server is a physical or virtual machine that provides services, like hosting websites or applications, to other computers (clients) over a network.
+
+➤ What is the role of the domain name?
+The domain name (e.g., foobar.com) provides a human-readable address that maps to the IP address of the server, so users don’t need to remember IPs.
+
+➤ What type of DNS record is www in www.foobar.com?
+The www is a subdomain, and its DNS record is typically an A (Address) record, which maps the domain (www.foobar.com) to the server’s IP (8.8.8.8).
+
+➤ What is the role of the web server?
+The web server (Nginx in this case):
+
+Receives and handles HTTP requests from users.
+
+Serves static content (HTML, CSS, JS).
+
+Acts as a reverse proxy, forwarding dynamic requests to the application server.
+
+➤ What is the role of the application server?
+The application server:
+
+Runs the backend code (Python, PHP, Node.js, etc.).
+
+Processes business logic (e.g., user login, form submission).
+
+Communicates with the database and returns dynamic content to Nginx.
+
+➤ What is the role of the database?
+The MySQL database:
+
+Stores structured data (users, posts, products, etc.).
+
+Responds to queries from the application server.
+
+Ensures data persistence.
+
+➤ What does the server use to communicate with the user’s computer?
+The server and client communicate using the HTTP/HTTPS protocol over TCP/IP via port 80 (HTTP) or 443 (HTTPS).
+
+⚠️ Issues with this infrastructure:
+1. SPOF (Single Point of Failure)
+Only one server: if it crashes or goes offline, the whole website becomes unavailable.
+
+2. Downtime during maintenance
+Restarting the web or application server (e.g., for a deployment) causes temporary unavailability of the website.
+
+3. No Scalability
+The single server can't handle too many users or high traffic.
+
+No load balancing or horizontal scaling is possible in this setup.
+
+📁 over plan of Structure of  task 0-simple_web_stack
+
+txt
+Copier
+Modifier
+User → DNS (www.foobar.com A record → 8.8.8.8) → Internet → Server (8.8.8.8)
+    └── Web server (Nginx)
+        └── Application server (runs codebase)
+            └── MySQL database
+
+Explanation:
+- Server: A machine that hosts the web stack.
+- Domain name: foobar.com points to 8.8.8.8, making the site reachable.
+- DNS www: A record for www.foobar.com → 8.8.8.8.
+- Web server (Nginx): Handles HTTP requests and serves static files.
+- Application server: Processes logic, runs the code.
+- Database: Stores and retrieves site data.
+- Communication: HTTP/HTTPS over TCP/IP between user and web server.
+
+Limitations:
+- SPOF: One server failure = whole system down.
+- Downtime: Server restart needed for updates = user downtime.
+- No scalability: Can’t handle high traffic without multiple servers/load balancer.
