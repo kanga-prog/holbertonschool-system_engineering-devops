@@ -1,0 +1,186 @@
+Infrastructure Design
+
+                       [ Internet ]
+                            |
+                            |
+                     +-------------+
+                     |   Firewall  |
+                     +-------------+
+                            |
+                     +----------------+
+                     | Load Balancer  |
+                     +----------------+
+                            |
+         +------------------+------------------+
+         |                                     |
+ +--------------+                     +--------------+
+ | Firewall     |                     | Firewall     |
+ +--------------+                     +--------------+
+         |                                     |
+ +------------------+               +------------------+
+ | Web Server 1     |               | Web Server 2     |
+ | (Nginx + App)                     (Nginx + App)
+ 📜 SSL Cert installed|             |📜 SSL Cert installed|
+ +------------------+               +------------------+
+         |                                     |
+ +------------------+               +------------------+
+ | Monitoring Agent |               | Monitoring Agent |
+ +------------------+               +------------------+
+
+                    \_______________________________/
+                                     |
+                          +-----------------------+
+                          | MySQL DB Server (Primary) |
+                          +-----------------------+
+                          | Monitoring Agent       |
+                          +-----------------------+
+
+Content of 2-secured_and_monitored_web_infrastructure : 
+
+- 3 Firewalls (Internet→LB, LB→Web, Web→DB) filter unauthorized traffic
+- 1 SSL certificate secures www.foobar.com with HTTPS
+- 3 Monitoring agents send logs/metrics to centralized monitoring tool (e.g., Sumo Logic)
+- Load Balancer distributes traffic across 2 Web Servers
+- Web Servers connect to 1 MySQL DB (Primary) for writes
+- Monitoring tracks uptime, QPS, errors; alerts when issues arise
+
+Problems:
+- SSL termination at LB exposes traffic between LB and Web Servers
+- Single MySQL writer = SPOF; no high availability
+- Mixing all components in one server reduces scalability and increases coupling
+
+explanation :
+
+✅ Added Components & Justifications
+🔐 1 SSL Certificate
+Used to secure communications to www.foobar.com using HTTPS.
+
+Encrypts traffic between user and server, protecting against MITM attacks.
+
+Issued by a Certificate Authority (CA), installed at the web server or load balancer.
+
+🔥 3 Firewalls
+One between Internet and Load Balancer.
+
+One between Load Balancer and Web Servers.
+
+One between Web Servers and Database Server.
+
+Firewalls control incoming and outgoing traffic, only allowing required ports:
+
+HTTP/HTTPS (80/443)
+
+SSH (22) – from admin IPs only
+
+MySQL (3306) – only from internal IPs of web servers
+
+🛠 3 Monitoring Clients
+Installed on:
+
+Web Server 1
+
+Web Server 2
+
+MySQL Database Server
+
+These agents send logs and metrics to a monitoring service like Sumo Logic, Datadog, or Prometheus.
+
+📚 Required Explanations
+🔥 What are Firewalls for?
+Firewalls protect internal systems by:
+
+Filtering unwanted traffic
+
+Preventing unauthorized access
+
+Allowing only trusted IPs and protocols
+
+Example: Blocking external MySQL access (port 3306) to prevent SQL injection attempts directly on the database.
+
+🔒 Why is the traffic served over HTTPS?
+HTTPS uses SSL/TLS encryption to:
+
+Secure communications
+
+Prevent sniffing or tampering
+
+Build user trust via the browser lock icon 🔒
+
+📊 What is Monitoring used for?
+Monitoring tools collect metrics such as:
+
+CPU/RAM usage
+
+Uptime
+
+Network traffic
+
+Request rate (QPS)
+
+Error logs
+
+They help:
+
+Detect issues early
+
+Track performance trends
+
+Alert admins via SMS/Email/Slack when anomalies are detected
+
+🧲 How is monitoring collecting data?
+Each server runs a lightweight agent (e.g., Sumo Logic collector, Prometheus node_exporter).
+
+Agents collect logs (syslog, nginx logs, app logs)
+
+Collect metrics (CPU, disk, QPS)
+
+Send data to a central monitoring backend
+
+Dashboards and alerts are built from this data
+
+📈 How to monitor web server QPS (Queries Per Second)?
+To monitor QPS:
+
+Enable access logging in Nginx or Apache.
+
+Use a log-based tool (like Sumo Logic, GoAccess, or Logstash) to:
+
+Parse timestamps
+
+Count requests per second/minute
+
+Or use an exporter like nginx-prometheus-exporter and send metrics to Prometheus.
+
+Visualize with Grafana, set alert thresholds.
+
+⚠️ Issues with this Infrastructure :
+1. 🔓 Terminating SSL at the Load Balancer
+If SSL is terminated at the load balancer, traffic between the load balancer and web servers is unencrypted.
+
+Vulnerability: Data may be sniffed inside the internal network.
+
+Solution: Use end-to-end encryption, or SSL passthrough to web servers.
+
+2. 🛑 Single MySQL server accepting writes
+If the DB crashes, the entire application can't handle write operations.
+
+No failover = Single point of failure.
+
+Solution: Use replication (Primary → Replica) with automated failover using tools like Orchestrator.
+
+3. 🎛️ All servers have same components (web, app, db)
+Each server doing everything leads to:
+
+Inefficient use of resources
+
+Harder scaling (can’t scale web layer independently)
+
+Coupling: failure in one component affects others
+
+Solution: Separate concerns:
+
+Web servers: serve static content and forward to app
+
+App servers: business logic
+
+DB server: data persistence
