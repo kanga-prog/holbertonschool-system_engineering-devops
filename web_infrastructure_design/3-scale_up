@@ -1,0 +1,105 @@
+design and descrition :
+                            [ Internet ]
+                                 |
+                                 |
+                         +------------------+
+                         |    Firewall      |
+                         +------------------+
+                                 |
+                     +--------------------------+
+                     | HAProxy Load Balancer 1  |
+                     | (SSL Termination or TLS) |
+                     +--------------------------+
+                                 ||
+                     +--------------------------+
+                     | HAProxy Load Balancer 2  |
+                     +--------------------------+
+                                 |
+              +------------------+------------------+
+              |                                     |
+    +------------------+                 +------------------+
+    | Web Server 1     |                 | Web Server 2     |
+    | (Nginx - static) |                 | (Nginx - static) |
+    +------------------+                 +------------------+
+              |                                     |
+              +------------------+------------------+
+                                 |
+                          +----------------+
+                          | App Server     |
+                          | (Gunicorn, Flask/Django) |
+                          +----------------+
+                                 |
+                          +----------------+
+                          | MySQL Database |
+                          |   (Primary)    |
+                          +----------------+
+
+
+- Added a new Application Server to isolate dynamic logic (backend code) from static web servers
+- Added a second Load Balancer (HAProxy) to form a high availability cluster using VRRP or keepalived
+- Split components:
+  - Web servers handle static content (Nginx)
+  - Application server processes backend logic (e.g., Gunicorn + Flask)
+  - Database server handles persistent data (MySQL)
+- Each server can scale independently (horizontal scaling)
+- Load Balancer cluster prevents single point of failure
+
+
+explation : 
+
+
+✅ Added Elements & Why
+🆕 1. New Server
+Added App Server to separate application logic from static content.
+
+This improves performance and follows separation of concerns.
+
+The app server runs backend code (e.g., Flask, Django, Node.js) and connects to the database.
+
+🆕 1 HAProxy Load Balancer (Clustered)
+Introduced a second load balancer to provide high availability (HA).
+
+Both LBs use VRRP (Virtual Router Redundancy Protocol) or keepalived to form an active/passive cluster.
+
+If one load balancer fails, the other automatically takes over.
+
+🧠 Why Split Components?
+💡 Web Server (Nginx):
+Serves static content (HTML, CSS, JS).
+
+Acts as reverse proxy to app server.
+
+Reduces load on the application server.
+
+💡 Application Server (e.g., Gunicorn, uWSGI):
+Runs backend code (Python, Ruby, PHP, etc.).
+
+Processes business logic and API calls.
+
+Connects to database to read/write data.
+
+💡 Database Server (MySQL):
+Stores persistent data.
+
+Centralized and isolated to improve security and performance.
+
+Can be later replicated for read scaling and redundancy.
+
+🔁 Clustered Load Balancers (HAProxy)
+Why we added:
+
+Avoids a single point of failure.
+
+Maintains availability if one HAProxy server crashes.
+
+Clients always connect to a virtual IP (VIP) managed by both load balancers.
+
+📈 Benefits of This Scaled Architecture
+Separation of concerns improves security, performance, and scalability.
+
+High availability with clustered load balancers.
+
+Easier to scale horizontally: add more web or app servers independently.
+
+Infrastructure is more fault-tolerant and easier to maintain.
+
